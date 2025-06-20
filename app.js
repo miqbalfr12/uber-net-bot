@@ -113,9 +113,10 @@ app.post(
 
 app.post(
  "/send-group",
- [body("number").notEmpty(), body("message").notEmpty()],
+ [body("number").optional(), body("message").optional()],
  async (req, res) => {
   const errors = validationResult(req).formatWith(({msg}) => {
+   console.log(msg);
    return msg;
   });
 
@@ -125,23 +126,57 @@ app.post(
     message: errors.mapped(),
    });
   }
-  const number = req.body.number;
-  const message = req.body.message;
 
-  client
-   .sendMessage(number, message)
-   .then((response) => {
-    res.status(200).json({
-     status: true,
-     response: response,
-    });
-   })
-   .catch((err) => {
-    res.status(500).json({
-     status: false,
-     response: err,
-    });
+  if (Array.isArray(req.body)) {
+   console.log("req.body is an array");
+
+   res.status(200).json({
+    status: true,
+    response: "Message sent to all users",
    });
+
+   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+   for (let i = 0; i < req.body.length; i++) {
+    const user = req.body[i];
+
+    await client.sendMessage(user.number, user.message).catch((err) => {
+     console.log(err);
+    });
+
+    console.log(
+     `Message sent to ${user.number} (${i + 1} of ${req.body.length})`
+    );
+
+    // jeda setelah setiap user
+    await delay(5000);
+
+    // jeda tambahan setiap 5 user (kecuali jika itu user terakhir)
+    if ((i + 1) % 5 === 0 && i + 1 < userData.length) {
+     console.log(`Menunggu 2 menit setelah ${i + 1} user...`);
+     await delay(2 * 60 * 1000); // 2 menit
+    }
+   }
+  } else if (typeof req.body === "object" && req.body !== null) {
+   console.log("req.body is an object");
+   const number = req.body.number;
+   const message = req.body.message;
+
+   client
+    .sendMessage(number, message)
+    .then((response) => {
+     res.status(200).json({
+      status: true,
+      response: response,
+     });
+    })
+    .catch((err) => {
+     res.status(500).json({
+      status: false,
+      response: err,
+     });
+    });
+  }
  }
 );
 
