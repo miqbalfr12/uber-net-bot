@@ -140,6 +140,8 @@ app.post(
    for (let i = 0; i < req.body.length; i++) {
     const user = req.body[i];
 
+    console.log(`Sending ${user.number} (${i + 1} of ${req.body.length})`);
+
     await client.sendMessage(user.number, user.message).catch((err) => {
      console.log(err);
     });
@@ -152,7 +154,7 @@ app.post(
     await delay(5000);
 
     // jeda tambahan setiap 5 user (kecuali jika itu user terakhir)
-    if ((i + 1) % 5 === 0 && i + 1 < userData.length) {
+    if ((i + 1) % 5 === 0 && i + 1 < req.body.length) {
      console.log(`Menunggu 2 menit setelah ${i + 1} user...`);
      await delay(2 * 60 * 1000); // 2 menit
     }
